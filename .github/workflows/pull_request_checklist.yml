@@ -23,7 +23,7 @@ jobs:
           checklist=$(echo "${{ steps.pr-description.outputs.description }}" | grep -oP '\- \[.\] .+' | sed 's/\- \[.\] //g')
 
           # Check if "Updated documentation" is marked
-          if echo "${checklist}" | grep -q "\[x\] Added tests"; then
+          if echo "${checklist}" | grep -q "\[x\] added tests"; then
             echo "The 'Updated documentation' checkbox is marked."
             # Perform actions specific to "Updated documentation"
           else
