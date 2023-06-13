@@ -1,0 +1,41 @@
+name: Pull Request Checklist
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  checklist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Read Pull Request Description
+        id: pr-description
+        run: |
+          echo "::set-output name=description::$(cat ${{ github.event.pull_request.body_file }})"
+
+      - name: Check Checklist
+        run: |
+          checklist=$(echo "${{ steps.pr-description.outputs.description }}" | grep -oP '\- \[.\] .+' | sed 's/\- \[.\] //g')
+
+          # Check if "Updated documentation" is marked
+          if echo "${checklist}" | grep -q "\[x\] Added tests"; then
+            echo "The 'Updated documentation' checkbox is marked."
+            # Perform actions specific to "Updated documentation"
+          else
+            echo "The 'Updated documentation' checkbox is not marked."
+            # Perform actions for when "Updated documentation" is not marked
+          fi
+
+          # Check if "Added tests" is marked
+          if echo "${checklist}" | grep -q "\[x\] Added tests"; then
+            echo "The 'Added tests' checkbox is marked."
+            # Perform actions specific to "Added tests"
+          else
+            echo "The 'Added tests' checkbox is not marked."
+            # Perform actions for when "Added tests" is not marked
+          fi
