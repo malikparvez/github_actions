@@ -13,7 +13,7 @@ Mention any related issues or pull requests
 
 - [ ] added code changes.
 - [ ] added Documentation.
-- [ ] added tests.
+- [ ] Added tests.
 - [ ] title is populated
 - [ ] description exists
 - [ ] ci is green.
