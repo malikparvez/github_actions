@@ -26,7 +26,7 @@ jobs:
       - name: Check Checklist
         run: |
           template=$(echo "${{ steps.pr-template.outputs.template }}" | sed -n '/## Checklist/,/<!--/p' | sed '1d;$d')
-
+          echo "${template}"
           # Check if "Added tests" is marked
           if echo "${template}" | grep -q "\[x\] Added tests"; then
             echo "The 'Added tests' checkbox is marked."
