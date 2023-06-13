@@ -5,6 +5,9 @@ on:
     types:
       - opened
       - synchronize
+  check_run:
+    types:
+      - completed
 
 jobs:
   checklist:
@@ -14,17 +17,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Read Pull Request Description
-        id: pr-description
+      - name: Read Pull Request Template
+        id: pr-template
         run: |
-          echo "::set-output name=description::$(cat ${{ github.event.pull_request.body_file }})"
+          echo "::set-output name=template::$(cat pull_request_template.md)"
 
       - name: Check Checklist
         run: |
-          checklist=$(echo "${{ steps.pr-description.outputs.description }}" | grep -oP '\- \[.\] .+' | sed 's/\- \[.\] //g')
+          template=$(echo "${{ steps.pr-template.outputs.template }}" | sed -n '/Pull Request Checklist/,/```/p' | sed '1d;$d')
 
           # Check if "Added tests" is marked
-          if echo "${checklist}" | grep -q "\[x\] added tests"; then
+          if echo "${template}" | grep -q "\[x\] Added tests"; then
             echo "The 'Added tests' checkbox is marked."
             # Perform actions specific to "Added tests"
           else
