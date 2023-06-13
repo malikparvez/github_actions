@@ -1,5 +1,5 @@
 ## Description
-Provide a detailed description of the changes in this pull request
+Provide a detailed description of the changes in this pull request.
 
 ## Summary of change
 Please summarize here how your change directly addresses the description.
