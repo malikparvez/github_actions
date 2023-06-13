@@ -25,7 +25,7 @@ jobs:
 
       - name: Check Checklist
         run: |
-          checklist=$(echo "${{ steps.pr-description.outputs.description }}" | grep -oP '\- \[.\] .+' | sed 's/\- \[.\] //g')
+          checklist=$(echo "${{ steps.pr-description.outputs.description }}" | sed -n '/## Checklist/,/##/p' | sed '1d;$d')
 
           # Check if "Added tests" is marked
           if echo "${checklist}" | grep -q "\[x\] added tests"; then
