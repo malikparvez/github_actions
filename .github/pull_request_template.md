@@ -9,8 +9,6 @@ Mention any related issues or pull requests
 
 ## Checklist
 
-<!-- Mark the completed tasks with [x]: -->
-
 - [ ] added code changes.
 - [ ] added Documentation.
 - [ ] Added tests.
