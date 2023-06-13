@@ -4,6 +4,10 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
+  check_run:
+    types:
+      - completed
 
 jobs:
   checklist:
@@ -22,17 +26,8 @@ jobs:
         run: |
           checklist=$(echo "${{ steps.pr-description.outputs.description }}" | grep -oP '\- \[.\] .+' | sed 's/\- \[.\] //g')
 
-          # Check if "Updated documentation" is marked
-          if echo "${checklist}" | grep -q "\[x\] added tests"; then
-            echo "The 'Updated documentation' checkbox is marked."
-            # Perform actions specific to "Updated documentation"
-          else
-            echo "The 'Updated documentation' checkbox is not marked."
-            # Perform actions for when "Updated documentation" is not marked
-          fi
-
           # Check if "Added tests" is marked
-          if echo "${checklist}" | grep -q "\[x\] Added tests"; then
+          if echo "${checklist}" | grep -q "\[x\] added tests"; then
             echo "The 'Added tests' checkbox is marked."
             # Perform actions specific to "Added tests"
           else
