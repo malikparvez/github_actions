@@ -21,8 +21,8 @@ jobs:
       - name: Read Pull Request Description
         id: pr-description
         run: |
-          echo "$(cat ${{ github.event.pull_request.body_file }})" >> $GITHUB_ENV
-          echo "description=$(cat ${{ github.event.pull_request.body_file }})" >> $GITHUB_ENV
+          echo "$(cat ${{ github.event.pull_request.body }})" >> $GITHUB_ENV
+          echo "description=$(cat ${{ github.event.pull_request.body }})" >> $GITHUB_ENV
           cat "${{ github.event.pull_request.body }}"
 
       - name: Check Checklist
