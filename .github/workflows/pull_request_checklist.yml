@@ -9,8 +9,6 @@ on:
     types:
       - created
       - edited
-    contains:
-      - "[x] Added tests"
 
 jobs:
   checklist:
@@ -27,7 +25,7 @@ jobs:
 
       - name: Check Checklist
         run: |
-          template=$(echo "${{ steps.pr-template.outputs.template }}" | sed -n '/Pull Request Checklist/,/```/p' | sed '1d;$d')
+          template=$(echo "${{ steps.pr-template.outputs.template }}" | sed -n '/## Checklist/,/<!--/p' | sed '1d;$d')
 
           # Check if "Added tests" is marked
           if echo "${template}" | grep -q "\[x\] Added tests"; then
