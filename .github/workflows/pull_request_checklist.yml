@@ -38,4 +38,5 @@ jobs:
           else
             echo "The 'Added tests' checkbox is not marked."
             # Perform actions for when "Added tests" is not marked
+            exit 1
           fi
