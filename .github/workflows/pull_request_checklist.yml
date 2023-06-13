@@ -20,7 +20,7 @@ jobs:
 
       - name: Check Checklist
         run: |
-          checklist=$(echo "${{ github.event.pull_request.body }}" | sed -n '/## Checklist/,/<!--/p' | sed '1d;$d')
+          checklist=$(echo "${{ github.event.pull_request.body }}" | sed -n '/## Checklist/,/<!--/p' | sed '$d')
 
           # Check if "Added tests" is marked
           if echo "${checklist}" | grep -q "\- \[[xX]\] Added tests"; then
