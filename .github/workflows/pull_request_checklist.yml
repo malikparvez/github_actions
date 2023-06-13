@@ -23,6 +23,7 @@ jobs:
         run: |
           echo "$(cat ${{ github.event.pull_request.body_file }})" >> $GITHUB_ENV
           echo "description=$(cat ${{ github.event.pull_request.body_file }})" >> $GITHUB_ENV
+          cat "${{ github.event.pull_request.body }}"
 
       - name: Check Checklist
         run: |
