@@ -21,11 +21,12 @@ jobs:
       - name: Read Pull Request Description
         id: pr-description
         run: |
-          echo "::set-output name=description::$(cat ${{ github.event.pull_request.body_file }})"
+          echo "$(cat ${{ github.event.pull_request.body_file }})" >> $GITHUB_ENV
+          echo "description=$(cat ${{ github.event.pull_request.body_file }})" >> $GITHUB_ENV
 
       - name: Check Checklist
         run: |
-          checklist=$(echo "${{ steps.pr-description.outputs.description }}" | sed -n '/## Checklist/,/##/p' | sed '1d;$d')
+          checklist=$(grep -oPz '(?s)(?<=## Checklist\n).*(?=\n##)' <<< "${{ env.description }}")
 
           # Check if "Added tests" is marked
           if echo "${checklist}" | grep -q "\[x\] added tests"; then
