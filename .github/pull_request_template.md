@@ -1,5 +1,5 @@
 ## Description
-<!--- Provide a detailed description of the changes in this pull request -->
+Provide a detailed description of the changes in this pull request
 
 ## Summary of change
 Please summarize here how your change directly addresses the issue described. Describe changes to logic, state machines, validations, workflows, etc.
@@ -8,8 +8,7 @@ Please summarize here how your change directly addresses the issue described. De
 Add any other context about the problem here.
 
 ## Related Issues
-
-<!--- Mention any related issues or pull requests -->
+Mention any related issues or pull requests
 
 ## Checklist
 
