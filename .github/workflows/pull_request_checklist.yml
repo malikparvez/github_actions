@@ -18,15 +18,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Read Pull Request Description
-        id: pr-description
-        run: |
-          echo "$(cat ${{ github.event.pull_request.body }})" >> $GITHUB_ENV
-          echo "description=$(cat ${{ github.event.pull_request.body }})" >> $GITHUB_ENV
-
       - name: Check Checklist
         run: |
-          checklist=$(grep -oPz '(?s)(?<=## Checklist\n).*(?=\n##)' <<< "${{ env.description }}")
+          checklist=$(grep -oPz '(?s)(?<=## Checklist\n).*(?=\n##)' <<< "${{ github.event.pull_request.body }}")
 
           # Check if "Added tests" is marked
           if echo "${checklist}" | grep -q "\[x\] added tests"; then
