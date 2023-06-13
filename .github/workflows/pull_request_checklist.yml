@@ -1,9 +1,11 @@
 name: Pull Request Checklist
 
 on:
+  issue_comment:
+    types:
+      - created
   pull_request:
     types:
-      - opened
       - synchronize
 
 jobs:
@@ -14,25 +16,22 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Read Pull Request Description
-        id: pr-description
-        run: |
-          echo "::set-output name=description::$(cat ${{ github.event.pull_request.body_file }})"
-
       - name: Check Checklist
+        id: check
         run: |
-          checklist=$(echo "${{ steps.pr-description.outputs.description }}" | grep -oP '\- \[.\] .+' | sed 's/\- \[.\] //g')
+          issue_number=$(echo "${{ github.event.comment.body }}" | grep -oP '(\d+)')
+          issue_data=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/issues/${issue_number}")
+          checklist=$(echo "${issue_data}" | jq -r '.body' | grep -oP '\- \[.\] .+' | sed 's/\- \[.\] //g')
 
           # Check if "Added tests" is marked
           if echo "${checklist}" | grep -q "\[x\] added tests"; then
             echo "The 'Added tests' checkbox is marked."
-            # Perform actions specific to "Added tests"
+            echo "::set-output name=checkbox_marked::true"
           else
             echo "The 'Added tests' checkbox is not marked."
-            # Perform actions for when "Added tests" is not marked
-            exit 1
+            echo "::set-output name=checkbox_marked::false"
           fi
 
       - name: Trigger Actions
-        if: success() && steps.checklist.outputs.checklist_marked == 'true'
+        if: success() && steps.check.outputs.checkbox_marked == 'true'
         # Add your actions here
