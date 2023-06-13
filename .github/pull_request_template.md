@@ -1,14 +1,15 @@
-## JIRA
-Main JIRA ticket
+## Description
+<!--- Provide a detailed description of the changes in this pull request -->
 
-## Summary of issue
-Please summarize here how your change directly addresses the issue described. Describe changes to logic, state machines, validations, workflows, etc.
- 
 ## Summary of change
 Please summarize here how your change directly addresses the issue described. Describe changes to logic, state machines, validations, workflows, etc.
  
 ## Additional Context
 Add any other context about the problem here.
+
+## Related Issues
+
+<!--- Mention any related issues or pull requests -->
 
 ## Checklist
 
