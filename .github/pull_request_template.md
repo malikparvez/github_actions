@@ -1,10 +1,20 @@
-## Description
+## Describe the Bug
+A clear and concise description of what the bug is.
 
-<!-- Provide a brief description of the changes introduced by this pull request. -->
+## Expected Behavior
+A clear and concise description of what you expected to happen.
 
-## Related Issues
+## Steps to Reproduce
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '....'
 
-<!-- List any related issues or pull requests. -->
+## Environment
+ - Version [e.g. 1.27.0]
+ - Platform [e.g. Ubuntu 18.04]
+
+## Additional Context
+Add any other context about the problem here.
 
 ## Checklist
 
