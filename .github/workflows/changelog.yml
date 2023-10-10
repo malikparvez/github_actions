@@ -1,5 +1,5 @@
 # This is a generic workflow for creating a release prep
-# pr for a puppet module.
+# pr for a forge-ruby.
 # It requires that the caller sets `secrets: inherit` to ensure
 # that secrets are visible from steps in this workflow.
 name: "forge Release Prep"
@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: "forge version to be released."
+        description: "forge-ruby version to be released."
         required: true
         type: "string"
 
@@ -32,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Update metadata.json"
+      - name: "Update version.rb"
         run: |
           current_version=$(grep -o "VERSION = '[^']*'" lib/puppet_forge/version.rb | awk -F"'" '{print $2}' | tr -d \n)
           # Update version in version.rb, only matching first occurrence
