@@ -36,7 +36,7 @@ jobs:
         run: |
           current_version=$(grep -o "VERSION = '[^']*'" lib/puppet_forge/version.rb | awk -F"'" '{print $2}' | tr -d \n)
           # Update version in version.rb, only matching first occurrence
-          sed -i.bak "s/VERSION = '[^']*'/VERSION = '${{ github.event.inputs.version }}'/" lib/puppet_forge/version.rb
+          sed -i "" "s/VERSION = '[^']*'/VERSION = '${{ github.event.inputs.version }}'/" lib/puppet_forge/version.rb
           
       - name: "Get version"
         id: "get_version"
