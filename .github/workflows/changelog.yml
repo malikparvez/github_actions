@@ -34,14 +34,14 @@ jobs:
 
       - name: "Update metadata.json"
         run: |
-          current_version=$(jq --raw-output .VERSION lib/puppet_forge/version.rb)
+          current_version=$(grep -o "VERSION = '[^']*'" lib/puppet_forge/version.rb | awk -F"'" '{print $2}' | tr -d \n)
           # Update version in version.rb, only matching first occurrence
           sed -i "0,/$current_version/s//${{ github.event.inputs.version }}/" $(find . -name 'lib/puppet_forge/version.rb')
 
       - name: "Get version"
         id: "get_version"
         run: |
-          echo "version=$(jq --raw-output .VERSION lib/puppet_forge/version.rb)" >> $GITHUB_OUTPUT
+          echo "version=$(grep -o "VERSION = '[^']*'" lib/puppet_forge/version.rb | awk -F"'" '{print $2}' | tr -d \n)" >> $GITHUB_OUTPUT
 
       - name: "Check if a release is necessary"
         id: "check"
