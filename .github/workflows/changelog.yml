@@ -28,7 +28,7 @@ jobs:
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
-          gh changelog new --from-version v${{ github.event.inputs.version }}
+          gh changelog new --from-version 5.0.2 --next-version v${{ github.event.inputs.version }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
