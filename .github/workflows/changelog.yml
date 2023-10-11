@@ -2,7 +2,7 @@
 # pr for a forge-ruby.
 # It requires that the caller sets `secrets: inherit` to ensure
 # that secrets are visible from steps in this workflow.
-name: "forge Release Prep"
+name: "forge-ruby Release Prep"
 
 on:
   workflow_call:
@@ -67,5 +67,5 @@ jobs:
           title: "Release prep v${{ steps.get_version.outputs.version }}"
           base: "main"
           body: |
-            test
+            Automated release of new version of forge-ruby
           labels: "maintenance"
