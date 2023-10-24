@@ -1,0 +1,23 @@
+name: Smallstep + VMPooler
+
+on: workflow_dispatch
+
+
+jobs:
+  test:
+    name: Test Authentication
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_KEY }}
+      - name: SSH into remote server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > deploy_key
+          chmod 600 deploy_key
+          ssh -i deploy_key malik.parvez@10.225.0.216 'whoami'
