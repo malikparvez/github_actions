@@ -16,7 +16,7 @@ jobs:
           service-key: ${{ secrets.TWINGATE_KEY }}
       - name: resolve host
         run: |
-          host forgenext-app-dev-1.ops.puppetlabs.net
+          ping 10.225.0.216 
       - name: SSH into remote server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
