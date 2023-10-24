@@ -1,0 +1,44 @@
+# This is a generic workflow for releasing gems.
+# It requires that the caller sets `secrets: inherit` to ensure
+# that secrets are visible from steps in this workflow.
+name: "Forge-api release"
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: "The target for the release. This can be a commit sha or a branch."
+        required: false
+        default: "main"
+        type: "string"
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    if: github.repository_owner == 'puppetlabs'
+
+    steps:
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+        with:
+          ref: ${{ github.event.inputs.target }}
+          clean: true
+          fetch-depth: 0
+
+      - name: "Setup ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "2.7"
+          bundler-cache: "true"
+
+      - name: "Bundle environment"
+        run: |
+          echo ::group::bundler environment
+          bundle env
+          echo ::endgroup::
+
+      - name: "Build"
+        run: |
+           bundle exec harrison package
