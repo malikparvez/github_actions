@@ -1,4 +1,4 @@
-name: Smallstep + VMPooler
+name: ssh
 
 on: workflow_dispatch
 
