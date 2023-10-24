@@ -20,4 +20,4 @@ jobs:
         run: |
           echo "$SSH_PRIVATE_KEY" > deploy_key
           chmod 600 deploy_key
-          ssh -o StrictHostKeyChecking=no -i deploy_key malik.parvez@10.225.0.216 'cd ~/opt/forge-api/current && bundle exec rake entitlements:grant[malikparvez,puppetlabs-cem,24-10-2024]'
+          ssh -o StrictHostKeyChecking=no -i deploy_key malik.parvez@10.225.0.216 'cd ~/opt/forge-api/current && bundle exec rake -T'
