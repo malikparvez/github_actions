@@ -1,4 +1,4 @@
-name: Deployment
+name: Deployment test
 
 concurrency: prod
 
@@ -9,6 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     steps:
-      - name: deploy
+      - name: deploy test
         run: |
           echo "success"
