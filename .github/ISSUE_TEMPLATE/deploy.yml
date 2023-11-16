@@ -1,11 +1,8 @@
 name: Deployment
 
-concurrency: production
+concurrency: prod
 
-on:
-  push:
-    branches:
-      - main
+on: workflow_dispatch
 
 jobs:
   deployment:
@@ -14,4 +11,4 @@ jobs:
     steps:
       - name: deploy
         run: |
-        echo "success"
+          echo "success"
