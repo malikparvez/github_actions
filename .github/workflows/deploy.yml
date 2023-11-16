@@ -5,8 +5,8 @@ on: workflow_dispatch
 jobs:
   deployment:
     runs-on: ubuntu-latest
-    environment: prod
-    concurrency: prod
+    environment: stage
+    concurrency: stage
     steps:
       - name: deploy
         run: |
