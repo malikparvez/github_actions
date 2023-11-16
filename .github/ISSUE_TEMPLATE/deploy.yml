@@ -5,10 +5,8 @@ on: workflow_dispatch
 jobs:
   test:
     name: Test ssh
-    environment: pr
     runs-on: ubuntu-latest
     steps:
       - name: SSH into remote server
-
         run: |
           echo "test"
