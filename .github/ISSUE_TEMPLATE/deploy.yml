@@ -1,14 +1,15 @@
 name: Deployment test
-description: test
-concurrency: prod
 
 on: workflow_dispatch
 
+concurrency: prod
 jobs:
-  deployment:
-    runs-on: ubuntu-latest
+  test:
+    name: Test ssh
     environment: prod
+    runs-on: ubuntu-latest
     steps:
-      - name: deploy test
+      - name: SSH into remote server
+
         run: |
-          echo "success"
+          echo "test"
