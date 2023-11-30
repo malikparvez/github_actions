@@ -1,0 +1,47 @@
+name: release in dev for testing
+
+on:
+    pull_request:
+      types: [ labeled ]
+
+jobs:
+  release:
+    if: ${{ github.event.label.name == 'deploy' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Use node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+          
+      - name: Install dependencies
+        run: yarn install
+        
+      - name: "Build a new release"
+        run: |
+           mkdir -p /home/runner/work/forge-web/forge-web/pkg && npx harrison package
+
+      - name: "Setup twingate"
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_KEY }}
+        
+      - name: "Deploy"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+          export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PUB_KEY }}" > ~/.ssh/id_rsa.pub
+          chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa.pub
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+          version=$(ls -tr pkg | tail -1)
+          npx harrison deploy pkg/$version --env dev
