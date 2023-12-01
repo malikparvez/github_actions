@@ -1,6 +1,7 @@
 name: release in dev for testing
 
-on: workflow_dispatch
+on:
+  workflow_call:
 
 jobs:
   release:
