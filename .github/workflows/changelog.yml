@@ -58,7 +58,7 @@ jobs:
 
       - name: "Create pull Request"
         uses: "peter-evans/create-pull-request@v5"
-        if: ${{ steps.check.outputs.release == 'true' }}
+       # if: ${{ steps.check.outputs.release == 'true' }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Release prep v${{ steps.get_version.outputs.version }}"
