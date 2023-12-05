@@ -43,13 +43,13 @@ jobs:
         run: |
           echo "version=$(grep -o "version = '[^']*'" .version | awk -F"'" '{print $2}' | tr -d \n)" >> $GITHUB_OUTPUT
 
-      - name: "Check if a release is necessary"
-        id: "check"
-        run: |
-          git diff --quiet CHANGELOG.md && echo "release=false" >> $GITHUB_OUTPUT || echo "release=true" >> $GITHUB_OUTPUT
+      #- name: "Check if a release is necessary"
+      # id: "check"
+      #  run: |
+      #    git diff --quiet CHANGELOG.md && echo "release=false" >> $GITHUB_OUTPUT || echo "release=true" >> $GITHUB_OUTPUT
 
       - name: "Commit changes"
-        if: ${{ steps.check.outputs.release == 'true' }}
+        #if: ${{ steps.check.outputs.release == 'true' }}
         run: |
           git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
           git config --local user.name "GitHub Actions"
