@@ -15,6 +15,11 @@ jobs:
         with:
           node-version: 14.x
           
+      - name: "Get version"
+        id: "get_version"
+        run: |
+          echo "version=$(grep -o "version = '[^']*'" .version | awk -F"'" '{print $2}' | tr -d \n)" >> $GITHUB_OUTPUT
+          
       - name: Install dependencies
         run: yarn install
         
@@ -43,3 +48,17 @@ jobs:
           ssh-add ~/.ssh/id_rsa
           version=$(ls -tr pkg | tail -1)
           npx harrison deploy pkg/$version --env dev
+
+      - name: "Generate release notes"
+        run: |
+          export GH_HOST=github.com
+          gh extension install chelnak/gh-changelog
+          gh changelog get --latest > OUTPUT.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Create release"
+        run: |
+          gh release create v${{ steps.get_version.outputs.version }} --title v${{ steps.get_version.outputs.version }} -F OUTPUT.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
