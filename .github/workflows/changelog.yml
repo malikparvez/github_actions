@@ -28,20 +28,20 @@ jobs:
         run: |
           export GH_HOST=github.com
           gh extension install chelnak/gh-changelog
-          gh changelog new --from-version v5.0.1 --next-version v${{ github.event.inputs.version }}
+          gh changelog new --next-version v${{ github.event.inputs.version }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Update version.rb"
         run: |
-          current_version=$(grep -o "VERSION = '[^']*'" lib/puppet_forge/version.rb | awk -F"'" '{print $2}' | tr -d \n)
+          current_version=$(grep -o "version = '[^']*'" .version | awk -F"'" '{print $2}' | tr -d \n)
           # Update version in version.rb, only matching first occurrence
-          sed -i "0,/$current_version/s//${{ github.event.inputs.version }}/" $(find . -name 'version.rb')
+          sed -i "0,/$current_version/s//${{ github.event.inputs.version }}/" $(find . -name '.version')
           
       - name: "Get version"
         id: "get_version"
         run: |
-          echo "version=$(grep -o "VERSION = '[^']*'" lib/puppet_forge/version.rb | awk -F"'" '{print $2}' | tr -d \n)" >> $GITHUB_OUTPUT
+          echo "version=$(grep -o "version = '[^']*'" .version | awk -F"'" '{print $2}' | tr -d \n)" >> $GITHUB_OUTPUT
 
       - name: "Check if a release is necessary"
         id: "check"
@@ -67,5 +67,5 @@ jobs:
           title: "Release prep v${{ steps.get_version.outputs.version }}"
           base: "main"
           body: |
-            Automated release of new version of forge-ruby
+            Automated release of new version
           labels: "maintenance"
