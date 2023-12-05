@@ -24,6 +24,7 @@ jobs:
         run: yarn install
         
       - name: "Build a new release"
+        if: ${{ 'deploy' == 'dep' }}
         run: |
            mkdir -p /home/runner/work/forge-web/forge-web/pkg && npx harrison package
 
