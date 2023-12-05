@@ -1,4 +1,4 @@
-name: release in dev for testing
+name: release_forge_web
 
 on:
   workflow_call:
@@ -23,8 +23,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
         
-      - name: "Build a new release"
-        if: ${{ 'deploy' == 'dep' }}
+      - name: "Build a new release of forge web"
         run: |
            mkdir -p /home/runner/work/forge-web/forge-web/pkg && npx harrison package
 
@@ -34,7 +33,6 @@ jobs:
           service-key: ${{ secrets.TWINGATE_KEY }}
         
       - name: "Deploy"
-        if: ${{ 'deploy' == 'dep' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -50,6 +48,8 @@ jobs:
           ssh-add ~/.ssh/id_rsa
           version=$(ls -tr pkg | tail -1)
           npx harrison deploy pkg/$version --env dev
+          npx harrison deploy pkg/$version --env stage
+          npx harrison deploy pkg/$version --env prod
 
       - name: "Generate release notes"
         run: |
