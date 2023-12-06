@@ -1,26 +1,24 @@
-name: release in dev for testing
+name: release_web_dev
 
 on:
-    pull_request:
-      types: [ labeled ]
+  workflow_call:
 
 jobs:
   release:
-    if: ${{ github.event.label.name == 'deploy' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        
+
       - name: Use node.js 14.x
         uses: actions/setup-node@v1
         with:
           node-version: 14.x
-          
+
       - name: Install dependencies
         run: yarn install
         
-      - name: "Build a new release"
+      - name: "Build a new release of forge web"
         run: |
            mkdir -p /home/runner/work/forge-web/forge-web/pkg && npx harrison package
 
@@ -41,7 +39,11 @@ jobs:
           echo "${{ secrets.SSH_PUB_KEY }}" > ~/.ssh/id_rsa.pub
           chmod 600 ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa.pub
+          #eval "$(ssh-agent -s)"
+          #ssh-add ~/.ssh/id_rsa
+          version=$(ls -tr pkg | tail -1)
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
-          version=$(ls -tr pkg | tail -1)
+          echo "Starting deploy to dev"
           npx harrison deploy pkg/$version --env dev
+          echo "Successfully deployed to dev"
