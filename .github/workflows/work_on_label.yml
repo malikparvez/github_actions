@@ -2,13 +2,12 @@ name: check label
 
 on:
   pull_request:
-    types:
-      - opened
+    types: [ labeled ]
 
 
 jobs:
   build:
-    #if: ${{ github.event.label.name == 'deploy_dev' }}
+    if: ${{ github.event.label.name == 'deploy_dev' }}
     runs-on: ubuntu-latest
 
     steps:
