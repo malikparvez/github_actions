@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    if: ${{ github.event.label.name == 'deploy_dev' }}
+    #if: ${{ github.event.label.name == 'deploy_dev' }}
     runs-on: ubuntu-latest
 
     steps:
