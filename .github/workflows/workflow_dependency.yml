@@ -17,7 +17,7 @@ jobs:
           # Get the status of the latest workflow run
           status=$(curl -s -X GET \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/pull_request_checklist.yml/runs?event=pull_request" | jq -r '.workflow_runs[0].conclusion')
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/work_on_label.yml/runs?event=pull_request" | jq -r '.workflow_runs[0].conclusion')
 
           echo "Status of the latest run of test1.yml: $status"
 
