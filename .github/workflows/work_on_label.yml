@@ -2,7 +2,9 @@ name: check label
 
 on:
   pull_request:
-    types: [ labeled ]
+    types:
+      - opened
+
 
 jobs:
   build:
