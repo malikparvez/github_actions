@@ -2,9 +2,7 @@ name: workflow_dependency.yml
 
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
+    types: [ labeled ]
 
 jobs:
   checkWorkflowStatus:
