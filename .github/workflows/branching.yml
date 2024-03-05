@@ -16,7 +16,7 @@ jobs:
         id: get_tags
         run: |
           version=$(curl -sL https://api.github.com/repos/${GITHUB_REPOSITORY}/tags | jq -r '.[0].name')
-          echo "version=$version" >> $GITHUB_ENV
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Compare versions
         id: compare_versions
@@ -28,13 +28,13 @@ jobs:
           major_version2=$(echo "$version2" | cut -d'.' -f1 | sed 's/[^0-9]//g')
 
           if [ "$major_version2" -gt "$major_version1" ]; then
-              echo "major_version_upgrade=true" >> $GITHUB_ENV
+              echo "major_version_upgrade=true" >> $GITHUB_OUTPUT
           else
-              echo "major_version_upgrade=false" >> $GITHUB_ENV
+              echo "major_version_upgrade=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create branch if major version upgrade
-        if: env.major_version_upgrade == 'true'
+        if: steps.compare_versions.outputs.major_version_upgrade == 'true'
         run: |
           git checkout main
           echo "yaaay"
