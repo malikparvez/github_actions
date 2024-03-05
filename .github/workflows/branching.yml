@@ -32,9 +32,8 @@ jobs:
           else
               echo "major_version_upgrade=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Create branch if major version upgrade
+          
+      - uses: actions/checkout@v4
         if: steps.compare_versions.outputs.major_version_upgrade == 'true'
-        run: |
-          git checkout main
-          echo "yaaay"
+        with:
+          fetch-depth: 0
