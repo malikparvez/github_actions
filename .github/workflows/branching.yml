@@ -1,0 +1,38 @@
+name: Compare Versions
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  compare-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get tags from main branch
+        id: get_tags
+        run: |
+          version=$(curl -sL https://api.github.com/repos/${GITHUB_REPOSITORY}/tags | jq -r '.[0].name')
+          echo "::set-output name=version::$version"
+
+      - name: Compare versions
+        id: compare_versions
+        run: |
+          version1="${{ steps.get_tags.outputs.version }}"
+          version2="v2.3.1" # Manually provided version
+
+          major_version1=$(echo "$version1" | cut -d'.' -f1 | sed 's/[^0-9]//g')
+          major_version2=$(echo "$version2" | cut -d'.' -f1 | sed 's/[^0-9]//g')
+
+          if [ "$major_version1" -lt "$major_version2" ]; then
+              echo "::set-output name=major_version_upgrade::true"
+          else
+              echo "::set-output name=major_version_upgrade::false"
+          fi
+
+      - name: Create branch if major version upgrade
+        if: steps.compare_versions.outputs.major_version_upgrade == 'true'
+        run: |
+          git checkout -b new_branch
+          git push origin new_branch
