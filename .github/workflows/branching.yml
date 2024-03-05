@@ -34,10 +34,11 @@ jobs:
           if [ "$major_version2" -gt "$major_version1" ]; then
               echo "major_version_upgrade=true" >> $GITHUB_OUTPUT
               git checkout -b $version2
+              git push origin $version2
           fi
 
       - name: Checkout prod branch
-        if: steps.compare_versions.outputs.major_version_upgrade != 'false'
+        if: steps.compare_versions.outputs.major_version_upgrade == 'false'
         uses: actions/checkout@v4
         with:
           ref: $version2
