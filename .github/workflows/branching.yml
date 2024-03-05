@@ -25,10 +25,10 @@ jobs:
           major_version1=$(echo "$version1" | cut -d'.' -f1 | sed 's/[^0-9]//g')
           major_version2=$(echo "$version2" | cut -d'.' -f1 | sed 's/[^0-9]//g')
 
-          if [ "$major_version1" -lt "$major_version2" ]; then
-              echo "::set-output name=major_version_upgrade::true"
+          if [ "$major_version1" -gt "$major_version2" ]; then
+            echo "::set-output name=major_version_upgrade::true"
           else
-              echo "::set-output name=major_version_upgrade::false"
+            echo "::set-output name=major_version_upgrade::false"
           fi
 
       - name: Create branch if major version upgrade
