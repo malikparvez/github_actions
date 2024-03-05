@@ -33,8 +33,8 @@ jobs:
 
           if [ "$major_version2" -gt "$major_version1" ]; then
               echo "major_version_upgrade=true" >> $GITHUB_OUTPUT
-              git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
-              git config --local user.name "GitHub Actions"
+              git config --local user.email "malik.parvez@perforce.com"
+              git config --local user.name "malikparvez"
               git checkout -b $version2
               git push origin $version2
           fi
