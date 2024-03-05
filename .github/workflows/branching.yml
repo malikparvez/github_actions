@@ -36,12 +36,13 @@ jobs:
               git config user.name "$(gh api /users/${GITHUB_ACTOR} | jq .name -r)"
               git config user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
               git switch -c $version2
+              git push origin $version2
           fi
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Checkout prod branch
-        if: steps.compare_versions.outputs.major_version_upgrade != 'false'
+        if: steps.compare_versions.outputs.major_version_upgrade == 'false'
         uses: actions/checkout@v4
         with:
           ref: $version2
