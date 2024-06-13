@@ -1,0 +1,13 @@
+name: "Restricted Deployment"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: "Deploy to Protected Environment"
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: "Deploy Application"
+        run: echo "Deploying to production environment."
