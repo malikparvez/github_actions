@@ -23,14 +23,14 @@ jobs:
       - name: "Get version"
         id: "get_version"
         run: |
-          echo "version=$(jq --raw-output '.version | gsub("[^0-9.]"; "")' metadata.json)" >> $GITHUB_OUTPUT
-
-      - name: "Check version"
-        if: ${{ steps.get_version.outputs.version == '' }}
-        run: |
-          echo "Version is empty. Exiting workflow."
-          exit 1
-
+          version=$(jq --raw-output '.version | gsub("[^0-9.]"; "")' metadata.json)
+          if [ -z "$version" ]; then
+            echo "Version is empty. Exiting workflow."
+            failure "Failed to retrieve version from metadata.json"
+          else
+            echo "version=$version" >> $GITHUB_OUTPUT
+          fi
+  
       - name: "print version"
         run: |
           echo ${{ steps.get_version.outputs.version }}
