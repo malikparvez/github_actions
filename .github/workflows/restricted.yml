@@ -1,13 +1,33 @@
-name: "Restricted Deployment"
+# This is a generic workflow for releasing a Puppet module.
+# It requires that the caller sets `secrets: inherit` to ensure
+# that secrets are visible from steps in this workflow.
+name: "Module Release"
 
 on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: "Deploy to Protected Environment"
-    runs-on: ubuntu-latest
-    environment: production
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+
     steps:
-      - name: "Deploy Application"
-        run: echo "Deploying to production environment."
+
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+        with:
+          ref: "${{ github.ref }}"
+          clean: true
+          fetch-depth: 0
+
+      - name: "Get version"
+        id: "get_version"
+        run: |
+          echo "version=$(jq --raw-output '.version | gsub("[^0-9.]"; "")' metadata.json)" >> $GITHUB_OUTPUT
+
+      - name: "Check version"
+        if: steps.get_version.outputs.version == ''
+        run: |
+          echo "Version is empty. Exiting workflow."
+          exit 1
+
