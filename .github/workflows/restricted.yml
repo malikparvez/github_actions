@@ -12,7 +12,12 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
-
+    
+      - name: "Set up Ruby"
+        uses: "actions/setup-ruby@v1"
+        with:
+          ruby-version: "3.1"
+          
       - name: "Checkout"
         uses: "actions/checkout@v4"
         with:
@@ -23,13 +28,19 @@ jobs:
       - name: "Get version"
         id: "get_version"
         run: |
-          version=$(jq --raw-output '.version | gsub("[^0-9.]"; "")' metadata.json)
-          if [ -z "$version" ]; then
-            echo "Version is empty. Exiting workflow."
-            failure "Failed to retrieve version from metadata.json"
+          require 'json'
+
+          # Read metadata.json
+          version = JSON.parse(File.read('metadata.json'))['version']
+
+          # Version string matching regex
+          semver_regex = /\A(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?\z/
+
+          if version&.match?(semver_regex)
+            `echo "version=#{version}" >> $GITHUB_OUTPUT`
           else
-            echo "version=$version" >> $GITHUB_OUTPUT
-          fi
+            raise "Version #{version} is invalid. Exiting workflow."
+          end
   
       - name: "print version"
         run: |
