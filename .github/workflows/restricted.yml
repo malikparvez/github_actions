@@ -25,11 +25,16 @@ jobs:
           clean: true
           fetch-depth: 0
 
+      #- name: "Get version"
+      #  id: "get_version"
+      #  run: |
+      #    version=$(ruby scripts/get_version.rb)
+      #    echo "version=$version" >> $GITHUB_OUTPUT
+          
       - name: "Get version"
         id: "get_version"
         run: |
-          version=$(ruby scripts/get_version.rb)
-          echo "version=$version" >> $GITHUB_OUTPUT
+          ruby -e 'require "json"; version = JSON.parse(File.read("metadata.json"))["version"]; semver_regex = /\A(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?\z/; if version&.match?(semver_regex); puts "version=#{version}"; else; raise "Version #{version} is invalid. Exiting workflow."; end' >> $GITHUB_OUTPUT
 
       - name: "print version"
         run: |
