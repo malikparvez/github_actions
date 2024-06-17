@@ -28,8 +28,9 @@ jobs:
       - name: "Get version"
         id: "get_version"
         run: |
-          ruby scripts/get_version.rb
-          
+          version=$(ruby get_version.rb)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
       - name: "print version"
         run: |
           echo ${{ steps.get_version.outputs.version }}
