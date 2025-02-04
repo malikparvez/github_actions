@@ -68,7 +68,7 @@ jobs:
       - name: Package viewer_request Lambda
         run: |
           cd staging
-          zip ../viewer_request.zip . -x get_version.rb
+          zip -r ../viewer_request.zip . -x get_version.rb
           cd ..
 
       - name: Package origin_request Lambda
