@@ -1,0 +1,105 @@
+name: Deploy Lambda@Edge to prod
+
+on:
+    workflow_dispatch:
+        inputs:
+          version:
+            description: 'Pushpak version to be released'
+            required: true
+            type: "string"
+
+jobs:
+  release_prep:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        
+      - name: Decide major or minor version
+        id: compare_versions
+        run: |
+          latest_tag=${{ steps.previoustag.outputs.tag }}
+          current_version=$(echo "$latest_tag" | cut -d'.' -f1 | sed 's/[^0-9]//g')
+          new_version=$(echo "${{ github.event.inputs.version }}" | cut -d'.' -f1 | sed 's/[^0-9]//g')
+          echo "new : $new_version"
+          echo "current: $current_version"
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
+ 
+          if [ "$new_version" -gt "$current_version" ]; then
+              echo "major_version_upgrade=true" >> $GITHUB_OUTPUT
+              echo "base_branch=main" >> $GITHUB_OUTPUT
+          else
+            echo "major_version_upgrade=false" >> $GITHUB_OUTPUT
+            echo "base_branch=$current_version.0.0" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+       # if the version is not major then checkout current feature branch
+      - name: checkout current feature branch
+        if: steps.compare_versions.outputs.major_version_upgrade == 'false'
+        uses: actions/checkout@v4
+        with:
+          ref: "${{ steps.compare_versions.outputs.current_version}}.0.0"
+
+      - name: "Cut out a new feature branch for major release"
+        if: steps.compare_versions.outputs.major_version_upgrade == 'true'
+        run: |
+          # Cut a new feature branch from main
+          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+          git switch -c ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
+
+      - name: Prepare staging directory
+        run: |
+          rm -rf staging
+          mkdir -p staging
+          cp -r src/* staging/
+          pip install -r requirements.txt -t staging
+
+      - name: Package viewer_request Lambda
+        run: |
+          cd staging
+          zip ../viewer_request.zip -j edge_functions/viewer_request.py
+          cd ..
+
+      - name: Package origin_request Lambda
+        run: |
+          cd staging
+          zip -r ../origin_request.zip . -x edge_functions/viewer_request.py
+          cd ..
+
+      - name: "Create release"
+        run: |
+          echo "$base_branch"
+
+          gh release create v${{ github.event.inputs.version }} \
+            --title v${{ github.event.inputs.version }} \
+            --target ${{ github.event.inputs.version }} \
+            viewer_request.zip origin_request.zip origin_response.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+      
+      #- name: Upload ZIPs to S3
+      #  env:
+      #    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #    AWS_REGION: "us-east-1"
+      #  run: |
+      #    S3_BUCKET="pushpak-lambda-source"
+      #    VIEWER_REQUEST_ZIP="viewer_request_prod.zip"
+      #    ORIGIN_REQUEST_ZIP="origin_request_prod.zip"
+      #    ORIGIN_RESPONSE_ZIP="origin_response_prod.zip"
+
+       #   aws s3 cp viewer_request.zip s3://$S3_BUCKET/$VIEWER_REQUEST_ZIP
+       #   aws s3 cp origin_request.zip s3://$S3_BUCKET/$ORIGIN_REQUEST_ZIP
+       #   aws s3 cp origin_response.zip s3://$S3_BUCKET/$ORIGIN_RESPONSE_ZIP
