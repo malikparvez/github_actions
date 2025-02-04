@@ -63,19 +63,18 @@ jobs:
         run: |
           rm -rf staging
           mkdir -p staging
-          cp -r src/* staging/
-          pip install -r requirements.txt -t staging
+          cp -r README.md staging/
 
       - name: Package viewer_request Lambda
         run: |
           cd staging
-          zip ../viewer_request.zip -j edge_functions/viewer_request.py
+          zip ../viewer_request.zip -x README.md
           cd ..
 
       - name: Package origin_request Lambda
         run: |
           cd staging
-          zip -r ../origin_request.zip . -x edge_functions/viewer_request.py
+          zip -r ../origin_request.zip . -x README.md
           cd ..
 
       - name: "Create release"
@@ -85,7 +84,7 @@ jobs:
           gh release create v${{ github.event.inputs.version }} \
             --title v${{ github.event.inputs.version }} \
             --target ${{ github.event.inputs.version }} \
-            viewer_request.zip origin_request.zip origin_response.zip
+            viewer_request.zip origin_request.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
       
