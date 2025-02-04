@@ -63,18 +63,18 @@ jobs:
         run: |
           rm -rf staging
           mkdir -p staging
-          cp -r README.md staging/
+          cp -r scripts/* staging/
 
       - name: Package viewer_request Lambda
         run: |
           cd staging
-          zip ../viewer_request.zip -x README.md
+          zip ../viewer_request.zip . -x get_version.rb
           cd ..
 
       - name: Package origin_request Lambda
         run: |
           cd staging
-          zip -r ../origin_request.zip . -x README.md
+          zip -r ../origin_request.zip . -x get_version.rb
           cd ..
 
       - name: "Create release"
