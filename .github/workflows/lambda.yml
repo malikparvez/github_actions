@@ -71,7 +71,7 @@ jobs:
 
           gh release create v${{ github.event.inputs.version }} \
             --title v${{ github.event.inputs.version }} \
-            --target ${{ github.event.inputs.version }} \
+            --target ${{ steps.compare_versions.outputs.base_branch }} \
             README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
