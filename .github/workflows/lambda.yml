@@ -65,18 +65,6 @@ jobs:
           mkdir -p staging
           cp -r scripts/* staging/
 
-      - name: Package viewer_request Lambda
-        run: |
-          cd staging
-          zip -r ../viewer_request.zip . -x get_version.rb
-          cd ..
-
-      - name: Package origin_request Lambda
-        run: |
-          cd staging
-          zip -r ../origin_request.zip . -x get_version.rb
-          cd ..
-
       - name: "Create release"
         run: |
           echo "$base_branch"
@@ -84,7 +72,7 @@ jobs:
           gh release create v${{ github.event.inputs.version }} \
             --title v${{ github.event.inputs.version }} \
             --target ${{ github.event.inputs.version }} \
-            viewer_request.zip origin_request.zip
+            README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
       
