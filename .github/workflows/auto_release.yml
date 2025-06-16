@@ -35,15 +35,9 @@ jobs:
             echo "BUMP=Z" >> $GITHUB_OUTPUT
           fi
 
-      - name: Get latest Git tag version
+      - name: 'Get Previous tag'
         id: current_version
-        run: |
-          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          if [[ -z "$tag" ]]; then
-            tag="0.0.0"
-          fi
-          echo "Latest tag: $tag"
-          echo "version=$tag" >> $GITHUB_OUTPUT
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
 
       - name: Bump version
         id: bump_version
