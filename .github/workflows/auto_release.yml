@@ -14,40 +14,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Needed to fetch all tags
+          fetch-depth: 0
 
       - name: Get PR labels
         id: labels
         run: |
-          echo "LABELS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          LABELS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels \
-            | jq -r '.[].name' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+            | jq -r '.[].name' | tr '\n' ' ')
+          echo "labels=$LABELS" >> $GITHUB_OUTPUT
 
       - name: Determine bump type
         id: bump
         run: |
-          LABELS="${{ steps.labels.outputs.LABELS }}"
+          LABELS="${{ steps.labels.outputs.labels }}"
           if [[ "$LABELS" == *"feature"* ]]; then
-            echo "BUMP=X" >> $GITHUB_OUTPUT
+            echo "bump=X" >> $GITHUB_OUTPUT
           elif [[ "$LABELS" == *"bug"* ]]; then
-            echo "BUMP=Y" >> $GITHUB_OUTPUT
+            echo "bump=Y" >> $GITHUB_OUTPUT
           else
-            echo "BUMP=Z" >> $GITHUB_OUTPUT
+            echo "bump=Z" >> $GITHUB_OUTPUT
           fi
 
-      - name: 'Get Previous tag'
+      - name: Get previous tag
         id: current_version
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        uses: WyriHaximus/github-action-get-previous-tag@v1
 
       - name: Bump version
         id: bump_version
         run: |
-          IFS='.' read -r X Y Z <<< "${{ steps.current_version.outputs.version }}"
-          bump="${{ steps.bump.outputs.BUMP }}"
+          VERSION="${{ steps.current_version.outputs.tag }}"
+          VERSION="${VERSION#v}"  # Remove leading 'v' if exists
+          IFS='.' read -r X Y Z <<< "$VERSION"
+          BUMP="${{ steps.bump.outputs.bump }}"
 
-          if [[ "$bump" == "X" ]]; then
+          if [[ "$BUMP" == "X" ]]; then
             X=$((X + 1)); Y=0; Z=0
-          elif [[ "$bump" == "Y" ]]; then
+          elif [[ "$BUMP" == "Y" ]]; then
             Y=$((Y + 1)); Z=0
           else
             Z=$((Z + 1))
@@ -57,18 +60,16 @@ jobs:
             fi
           fi
 
-          new_version="$X.$Y.$Z"
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          echo "Bumped to $new_version"
+          NEW_VERSION="v$X.$Y.$Z"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped to $NEW_VERSION"
 
-      - name: Create Git tag and push
+      - name: "Create release"
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git tag ${{ steps.bump_version.outputs.new_version }}
-          git push origin ${{ steps.bump_version.outputs.new_version }}
+          echo "$base_branch"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.bump_version.outputs.new_version }}
+          gh release create ${{ steps.bump_version.outputs.new_version }} \
+            --title ${{ steps.bump_version.outputs.new_version }} \
+            --target ${{ steps.bump_version.outputs.new_version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
