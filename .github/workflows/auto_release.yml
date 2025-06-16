@@ -66,10 +66,7 @@ jobs:
 
       - name: "Create release"
         run: |
-          echo "$base_branch"
-
           gh release create ${{ steps.bump_version.outputs.new_version }} \
-            --title ${{ steps.bump_version.outputs.new_version }} \
-            --target ${{ steps.bump_version.outputs.new_version }}
+            --title ${{ steps.bump_version.outputs.new_version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
