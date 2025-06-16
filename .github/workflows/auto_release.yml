@@ -1,4 +1,4 @@
-name: Auto Release
+name: Auto Release from Tags
 
 on:
   pull_request:
@@ -9,9 +9,12 @@ jobs:
   release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed to fetch all tags
 
       - name: Get PR labels
         id: labels
@@ -24,8 +27,6 @@ jobs:
         id: bump
         run: |
           LABELS="${{ steps.labels.outputs.LABELS }}"
-          echo "PR Labels: $LABELS"
-
           if [[ "$LABELS" == *"feature"* ]]; then
             echo "BUMP=X" >> $GITHUB_OUTPUT
           elif [[ "$LABELS" == *"bug"* ]]; then
@@ -34,15 +35,22 @@ jobs:
             echo "BUMP=Z" >> $GITHUB_OUTPUT
           fi
 
-      - name: Load and bump version
-        id: version
+      - name: Get latest Git tag version
+        id: current_version
         run: |
-          if [ ! -f VERSION ]; then echo "0.0.0" > VERSION; fi
+          tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          if [[ -z "$tag" ]]; then
+            tag="0.0.0"
+          fi
+          echo "Latest tag: $tag"
+          echo "version=$tag" >> $GITHUB_OUTPUT
 
-          version=$(cat VERSION)
-          IFS='.' read -r X Y Z <<< "$version"
-
+      - name: Bump version
+        id: bump_version
+        run: |
+          IFS='.' read -r X Y Z <<< "${{ steps.current_version.outputs.version }}"
           bump="${{ steps.bump.outputs.BUMP }}"
+
           if [[ "$bump" == "X" ]]; then
             X=$((X + 1)); Y=0; Z=0
           elif [[ "$bump" == "Y" ]]; then
@@ -56,24 +64,17 @@ jobs:
           fi
 
           new_version="$X.$Y.$Z"
-          echo "$new_version" > VERSION
-          echo "version=$new_version" >> $GITHUB_OUTPUT
-          echo "Bumped version to $new_version"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "Bumped to $new_version"
 
-      - name: Commit updated version
+      - name: Create Git tag and push
         run: |
-          git config user.name "GitHub Actions"
+          git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add VERSION
-          git commit -m "Bump version to ${{ steps.version.outputs.version }}"
-          git push
-
-      - name: Create Git tag
-        run: |
-          git tag v${{ steps.version.outputs.version }}
-          git push origin v${{ steps.version.outputs.version }}
+          git tag v${{ steps.bump_version.outputs.new_version }}
+          git push origin v${{ steps.bump_version.outputs.new_version }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.bump_version.outputs.new_version }}
