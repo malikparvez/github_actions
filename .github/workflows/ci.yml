@@ -1,0 +1,272 @@
+name: PR testing & CI Deployment
+
+on:
+  workflow_call:
+    inputs:
+      ecr_uri:
+        description: 'ECR URI for Docker registry'
+        required: true
+        type: string
+      docker_image_name:
+        description: 'Docker image name'
+        required: true
+        type: string
+      python_version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.12'
+      commons_repo:
+        description: 'Commons repository name'
+        required: false
+        type: string
+        default: 'cds-commons'
+      aws_role_arn:
+        description: 'AWS IAM role ARN for deployment'
+        required: true
+        type: string
+      aws_region:
+        description: 'AWS region'
+        required: false
+        type: string
+        default: 'us-east-1'
+      slack_channel:
+        description: 'Slack channel for notifications'
+        required: false
+        type: string
+        default: '#ccm-alerts-cicd'
+      enable_security_scan:
+        description: 'Enable Mend security scanning'
+        required: false
+        type: boolean
+        default: true
+      enable_deployment:
+        description: 'Enable deployment to CI environment'
+        required: false
+        type: boolean
+        default: true
+      test_command:
+        description: 'Custom test command to run'
+        required: false
+        type: string
+        default: 'poetry run pytest --cov=src --cov-report=term-missing'
+      lint_command:
+        description: 'Custom lint command to run'
+        required: false
+        type: string
+        default: 'poetry run pylint src/'
+    secrets:
+      GH_APP_ID:
+        description: 'GitHub App ID'
+        required: true
+      GH_APP_PRIVATE_KEY:
+        description: 'GitHub App Private Key'
+        required: true
+      CCM_MEND_API_KEY:
+        description: 'Mend API Key'
+        required: false
+      CCM_MEND_EMAIL:
+        description: 'Mend Email'
+        required: false
+      CCM_SLACK_BOT_TOKEN:
+        description: 'Slack Bot Token'
+        required: false
+    outputs:
+      image_tag:
+        description: 'Docker image tag that was built'
+        value: ${{ jobs.ci.outputs.IMAGE_TAG }}
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: ${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    outputs:
+      IMAGE_TAG: ${{ steps.set-vars.outputs.IMAGE_TAG }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python_version }}
+
+    - name: Create GitHub App Token
+      uses: actions/create-github-app-token@v1
+      id: app-token
+      with:
+        app-id: ${{ secrets.GH_APP_ID }}
+        private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+        repositories: |
+          ${{ inputs.commons_repo }}
+
+    - name: Read .version file
+      id: read_version
+      run: echo "version=$(awk '/${{ inputs.commons_repo }}/ {print $2}' .version || echo 'main')" >> $GITHUB_OUTPUT
+
+    - name: Checkout Commons Repository
+      if: ${{ inputs.commons_repo != '' }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ steps.app-token.outputs.token }}
+        persist-credentials: false
+        repository: 'puppetlabs/${{ inputs.commons_repo }}'
+        ref: ${{ steps.read_version.outputs.version }}
+        path: dist/${{ inputs.commons_repo }}
+
+    - name: Install Poetry
+      run: pip install poetry
+
+    - name: Install dependencies
+      run: poetry install --no-interaction --no-ansi --no-root --without dev
+
+    - name: Run Linting
+      continue-on-error: true
+      run: ${{ inputs.lint_command }}
+
+    - name: Run Tests
+      run: ${{ inputs.test_command }}
+
+    - name: Configure AWS credentials
+      if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws_role_arn }}
+        aws-region: ${{ inputs.aws_region }}
+
+    - name: Login to Amazon ECR
+      if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Set Variables
+      id: set-vars
+      run: |
+        FULL_SHA=${{ github.sha }}
+        SHORT_SHA=${FULL_SHA::7}
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          IMAGE_TAG="pr${{ github.event.number }}-${SHORT_SHA}"
+        else
+          IMAGE_TAG="${{ github.ref_name }}-${SHORT_SHA}"
+        fi
+        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+        echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ inputs.ecr_uri }}/${{ inputs.docker_image_name }}
+        tags: |
+          type=raw, value=latest
+          type=raw,value=${{ steps.set-vars.outputs.IMAGE_TAG }}
+        labels: |
+          maintainer=CCM
+          org.opencontainers.image.title=${{ inputs.docker_image_name }}
+          org.opencontainers.image.description=${{ inputs.docker_image_name }} Docker image
+          org.opencontainers.image.vendor=Perforce
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Mend Image Scan
+      if: ${{ inputs.enable_security_scan && github.event_name == 'push' && github.ref_name == 'main' }}
+      env:
+        MEND_USER_KEY: ${{ secrets.CCM_MEND_API_KEY }}
+        MEND_EMAIL: ${{ secrets.CCM_MEND_EMAIL }}
+        MEND_URL: https://saas-eu.whitesourcesoftware.com
+      run: |
+        curl https://downloads.mend.io/cli/linux_amd64/mend -o /usr/local/bin/mend && chmod +x /usr/local/bin/mend
+        docker image ls
+        mend version
+        mend auth info --non-interactive
+        mend image ${{ inputs.ecr_uri }}/${{ inputs.docker_image_name }}:${{ steps.set-vars.outputs.IMAGE_TAG }} --format text --local-pull --scope Puppet_GHC//GH_${{ inputs.docker_image_name }}//GH_${{ inputs.docker_image_name }}
+
+  deploy-to-ci:
+    needs: ci
+    if: ${{ inputs.enable_deployment && github.event_name == 'push' && github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create GitHub App Token
+      uses: actions/create-github-app-token@v1
+      id: app-token
+      with:
+        app-id: ${{ secrets.GH_APP_ID }}
+        private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+        repositories: |
+          ${{ inputs.docker_image_name }}
+          ccm-k8s-configs
+
+    - name: Get GitHub App User ID
+      id: get-user-id
+      run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ steps.app-token.outputs.token }}
+        persist-credentials: false
+
+    - name: Install Updatecli in the runner
+      uses: updatecli/updatecli-action@v2
+
+    - name: Run Updatecli in Dry Run mode
+      run: updatecli diff --config .github/updatecli/updatecli.d/ci.yaml --values .github/updatecli/values.d/scm.yaml --clean=true
+      env:
+        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        GITHUB_EMAIL: '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+        GITHUB_USER: '${{ steps.app-token.outputs.app-slug }}[bot]'
+        IMAGE_TAG: ${{ needs.ci.outputs.IMAGE_TAG }}
+
+    - name: Run Updatecli in Apply mode
+      run: updatecli apply --config .github/updatecli/updatecli.d/ci.yaml --values .github/updatecli/values.d/scm.yaml --clean=true
+      env:
+        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        GITHUB_EMAIL: '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+        GITHUB_USER: '${{ steps.app-token.outputs.app-slug }}[bot]'
+        IMAGE_TAG: ${{ needs.ci.outputs.IMAGE_TAG }}
+
+  slack-notify:
+    needs: [ci, deploy-to-ci]
+    if: always() && failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        if: ${{ secrets.CCM_SLACK_BOT_TOKEN != '' }}
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.CCM_SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ inputs.slack_channel }}",
+              "text": "Notification from Github Actions of `${{ github.repository }}`",
+              "attachments": [
+                {
+                    "color": "danger",
+                    "text": ":check-failed: Github Actions run failed for `${{ github.repository }}@${{ github.ref_name }}`, please look what's going on <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>",
+                    "mrkdwn_in": [
+                        "text"
+                    ]
+                }
+              ]
+            }
