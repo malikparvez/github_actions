@@ -251,7 +251,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack Notification
-        if: ${{ secrets.CCM_SLACK_BOT_TOKEN != '' }}
+        if: ${{ inputs.slack_channel != '' }}
         uses: slackapi/slack-github-action@v2.0.0
         with:
           method: chat.postMessage
