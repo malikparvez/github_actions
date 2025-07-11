@@ -85,7 +85,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
+  pr_testing:
     runs-on: ubuntu-latest
     outputs:
       IMAGE_TAG: ${{ steps.set-vars.outputs.IMAGE_TAG }}
@@ -127,7 +127,7 @@ jobs:
       run: pip install poetry
 
     - name: Install dependencies
-      run: poetry install --no-interaction --no-ansi --no-root
+      run: poetry install --no-interaction --no-ansi --no-root --without dev
 
     - name: Run Linting
       continue-on-error: true
@@ -135,6 +135,13 @@ jobs:
 
     - name: Run Tests
       run: ${{ inputs.test_command }}
+
+ 
+  deploy-to-ci:
+    needs: pr_testing
+    if: ${{ inputs.enable_deployment }}
+    runs-on: ubuntu-latest
+    steps:
 
     - name: Configure AWS credentials
       if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
@@ -196,12 +203,7 @@ jobs:
         mend version
         mend auth info --non-interactive
         mend image ${{ inputs.ecr_uri }}/${{ inputs.docker_image_name }}:${{ steps.set-vars.outputs.IMAGE_TAG }} --format text --local-pull --scope Puppet_GHC//GH_${{ inputs.docker_image_name }}//GH_${{ inputs.docker_image_name }}
-
-  deploy-to-ci:
-    needs: ci
-    if: ${{ inputs.enable_deployment && github.event_name == 'push' && github.ref_name == 'main' }}
-    runs-on: ubuntu-latest
-    steps:
+        
     - name: Create GitHub App Token
       uses: actions/create-github-app-token@v1
       id: app-token
@@ -246,7 +248,7 @@ jobs:
         IMAGE_TAG: ${{ needs.ci.outputs.IMAGE_TAG }}
 
   slack-notify:
-    needs: [ci, deploy-to-ci]
+    needs: [pr_testing, deploy-to-ci]
     if: always() && failure()
     runs-on: ubuntu-latest
     steps:
