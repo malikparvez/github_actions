@@ -136,13 +136,6 @@ jobs:
     - name: Run Tests
       run: ${{ inputs.test_command }}
 
- 
-  deploy-to-ci:
-    needs: pr_testing
-    if: ${{ inputs.enable_deployment }}
-    runs-on: ubuntu-latest
-    steps:
-
     - name: Configure AWS credentials
       if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
       uses: aws-actions/configure-aws-credentials@v4
@@ -191,19 +184,24 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 
-    - name: Mend Image Scan
-      if: ${{ inputs.enable_security_scan && github.event_name == 'push' && github.ref_name == 'main' }}
-      env:
-        MEND_USER_KEY: ${{ secrets.CCM_MEND_API_KEY }}
-        MEND_EMAIL: ${{ secrets.CCM_MEND_EMAIL }}
-        MEND_URL: https://saas-eu.whitesourcesoftware.com
-      run: |
-        curl https://downloads.mend.io/cli/linux_amd64/mend -o /usr/local/bin/mend && chmod +x /usr/local/bin/mend
-        docker image ls
-        mend version
-        mend auth info --non-interactive
-        mend image ${{ inputs.ecr_uri }}/${{ inputs.docker_image_name }}:${{ steps.set-vars.outputs.IMAGE_TAG }} --format text --local-pull --scope Puppet_GHC//GH_${{ inputs.docker_image_name }}//GH_${{ inputs.docker_image_name }}
-        
+    #- name: Mend Image Scan
+    #  if: ${{ inputs.enable_security_scan && github.event_name == 'push' && github.ref_name == 'main' }}
+    #  env:
+    #    MEND_USER_KEY: ${{ secrets.CCM_MEND_API_KEY }}
+    #    MEND_EMAIL: ${{ secrets.CCM_MEND_EMAIL }}
+    #    MEND_URL: https://saas-eu.whitesourcesoftware.com
+    #  run: |
+    #    curl https://downloads.mend.io/cli/linux_amd64/mend -o /usr/local/bin/mend && chmod +x /usr/local/bin/mend
+    #    docker image ls
+    #    mend version
+    #    mend auth info --non-interactive
+    #    mend image ${{ inputs.ecr_uri }}/${{ inputs.docker_image_name }}:${{ steps.set-vars.outputs.IMAGE_TAG }} --format text --local-pull --scope Puppet_GHC//GH_${{ inputs.docker_image_name }}//GH_${{ inputs.docker_image_name }}
+
+  deploy-to-ci:
+    needs: pr_testing
+    if: ${{ inputs.enable_deployment && github.event_name == 'push' && github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
     - name: Create GitHub App Token
       uses: actions/create-github-app-token@v1
       id: app-token
