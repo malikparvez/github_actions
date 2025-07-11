@@ -127,7 +127,7 @@ jobs:
       run: pip install poetry
 
     - name: Install dependencies
-      run: poetry install --no-interaction --no-ansi --no-root --without dev
+      run: poetry install --no-interaction --no-ansi --no-root
 
     - name: Run Linting
       continue-on-error: true
