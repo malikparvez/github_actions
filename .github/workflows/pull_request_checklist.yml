@@ -14,7 +14,7 @@ on:
 jobs:
   checklist:
     runs-on: self-hosted
-
+    environment: test
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
