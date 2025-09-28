@@ -103,3 +103,9 @@ jobs:
           body: |
             Automated release of new version
           labels: "maintenance"
+
+      - name: Auto-merge the pull request
+        run: |
+          gh pr merge release-prep --merge --delete-branch --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
