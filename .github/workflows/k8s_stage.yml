@@ -83,10 +83,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit changes
-        run: |
-          git add metadata.json
-          git commit -m "Update version to ${{ env.PLATFORM_VERSION }}"
-          git push origin main --force
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update version to ${{ env.PLATFORM_VERSION }}"
+          branch: ${{ env.PLATFORM_VERSION }}
+          title: "Release: ${{ env.PLATFORM_VERSION }}"
+          body: "This PR updates metadata.json for staging release."
+          base: main
+
