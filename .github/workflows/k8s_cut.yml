@@ -23,28 +23,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Create GitHub App Token
-        uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ secrets.GH_APP_ID }}
-          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: |
-            ${{ github.event.repository.name }}
-            cds-k8s-configs
-
-      - name: Get GitHub App User ID
-        id: get-user-id
-        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
       - name: Checkout source repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.version || main }}
 
       - name: Get latest release tag
         id: latesttag
@@ -67,27 +50,6 @@ jobs:
             echo "new_release=true" >> $GITHUB_OUTPUT
             echo "✅ Version $INPUT_VERSION is new and can be created"
           fi
-
-      - name: Install Updatecli in the runner
-        uses: updatecli/updatecli-action@v2
-
-      - name: Run Updatecli in Dry Run mode
-        run: updatecli diff --config .github/updatecli/updatecli.d/ci.yaml --values .github/updatecli/values.d/scm.yaml --clean=true
-        env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          GITHUB_EMAIL: '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
-          GITHUB_USER: '${{ steps.app-token.outputs.app-slug }}[bot]'
-          IMAGE_TAG: ${{ inputs.version }}
-          ENVIRONMENT: ${{ inputs.environment }}
-
-      - name: Run Updatecli in Apply mode
-        run: updatecli apply --config .github/updatecli/updatecli.d/ci.yaml --values .github/updatecli/values.d/scm.yaml --clean=true
-        env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          GITHUB_EMAIL: '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
-          GITHUB_USER: '${{ steps.app-token.outputs.app-slug }}[bot]'
-          IMAGE_TAG: ${{ inputs.version }}
-          ENVIRONMENT: ${{ inputs.environment }}
 
       - name: Cut out a new release branch
         if: ${{ steps.version-check.outputs.new_release == 'true' }}
