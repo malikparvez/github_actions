@@ -93,3 +93,22 @@ jobs:
           body: "This PR updates metadata.json for staging release."
           base: main
 
+      - name: "Commit changes"
+        run: |
+          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          git commit -m "Release prep v${{ env.PLATFORM_VERSION }}"
+
+      - name: "Create pull Request"
+        uses: "peter-evans/create-pull-request@v5"
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Release prep v${{ env.PLATFORM_VERSION }}"
+          branch: "release-prep"
+          delete-branch: true
+          title: "Release prep v${{ env.PLATFORM_VERSION }}"
+          base: "main"
+          body: |
+            Automated release of new version
+          labels: "maintenance"
