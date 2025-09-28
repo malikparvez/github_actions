@@ -1,0 +1,144 @@
+name: Deploy to stage
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Create stage deployment and cut out a new branch"
+        required: true
+        type: string
+      environment:
+        description: "The environment to deploy to"
+        required: true
+        type: string
+        default: "staging"
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy-to-stage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create GitHub App Token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+            cds-k8s-configs
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.version }}
+
+      - name: Get latest release tag
+        id: latesttag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+
+      - name: Check if version already exists
+        id: version-check
+        run: |
+          LATEST_TAG="${{ steps.latesttag.outputs.tag }}"
+          INPUT_VERSION="${{ inputs.version }}"
+          
+          echo "Latest tag: $LATEST_TAG"
+          echo "Input version: $INPUT_VERSION"
+          
+          if [ "$LATEST_TAG" = "$INPUT_VERSION" ]; then
+            echo "new_release=false" >> $GITHUB_OUTPUT
+            echo "❌ Version $INPUT_VERSION already exists as the latest tag"
+            exit 1
+          else
+            echo "new_release=true" >> $GITHUB_OUTPUT
+            echo "✅ Version $INPUT_VERSION is new and can be created"
+          fi
+
+      - name: Install Updatecli in the runner
+        uses: updatecli/updatecli-action@v2
+
+      - name: Run Updatecli in Dry Run mode
+        run: updatecli diff --config .github/updatecli/updatecli.d/ci.yaml --values .github/updatecli/values.d/scm.yaml --clean=true
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_EMAIL: '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+          GITHUB_USER: '${{ steps.app-token.outputs.app-slug }}[bot]'
+          IMAGE_TAG: ${{ inputs.version }}
+          ENVIRONMENT: ${{ inputs.environment }}
+
+      - name: Run Updatecli in Apply mode
+        run: updatecli apply --config .github/updatecli/updatecli.d/ci.yaml --values .github/updatecli/values.d/scm.yaml --clean=true
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_EMAIL: '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+          GITHUB_USER: '${{ steps.app-token.outputs.app-slug }}[bot]'
+          IMAGE_TAG: ${{ inputs.version }}
+          ENVIRONMENT: ${{ inputs.environment }}
+
+      - name: Cut out a new release branch
+        if: ${{ steps.version-check.outputs.new_release == 'true' }}
+        run: |
+          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+          git switch -c ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Update version in metadata.json
+        run: |
+          jq --arg VERSION "${{ inputs.version }}" --arg TIMESTAMP "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg IMAGE "cds-workflows:${{ inputs.version }}" '
+            .version = $VERSION | 
+            .environments.staging.image = $IMAGE |
+            .release.current = $VERSION |
+            .updated = $TIMESTAMP
+          ' metadata.json > metadata.json.tmp
+          mv metadata.json.tmp metadata.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          git commit -m "Release prep v${{ inputs.version }}"
+
+      - name: Create pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "update versions v${{ inputs.version }}"
+          branch: "stage-prep"
+          delete-branch: true
+          title: "Create stage release v${{ inputs.version }}"
+          base: "main"
+          body: |
+            Automated stage release
+          labels: "maintenance"
+
+      - name: Auto-merge the pull request
+        run: |
+          gh pr merge stage-prep --merge --delete-branch --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
