@@ -58,7 +58,7 @@ jobs:
       #    IMAGE_TAG: ${{ env.PLATFORM_VERSION }}
       - name: 'Get latest release tag'
         id: latesttag
-        uses: "WyriHaximus/github-action-get-latest-tag@v1"
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
 
       - name: Cut out a new release branch
         run: |
