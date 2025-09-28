@@ -45,7 +45,6 @@ jobs:
           if [ "$LATEST_TAG" = "$INPUT_VERSION" ]; then
             echo "new_release=false" >> $GITHUB_OUTPUT
             echo "❌ Version $INPUT_VERSION already exists as the latest tag"
-            exit 1
           else
             echo "new_release=true" >> $GITHUB_OUTPUT
             echo "✅ Version $INPUT_VERSION is new and can be created"
