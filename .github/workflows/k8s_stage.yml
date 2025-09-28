@@ -12,7 +12,7 @@ jobs:
   deploy-to-stage:
     runs-on: ubuntu-latest
     env:
-      PLATFORM_VERSION: "v1.2.3"  # Replace with your test version
+      PLATFORM_VERSION: "v1.2.4"  # Replace with your test version
 
     steps:
       #- name: Create GitHub App Token
@@ -56,6 +56,9 @@ jobs:
       #    GITHUB_EMAIL: '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
       #    GITHUB_USER: '${{ steps.app-token.outputs.app-slug }}[bot]'
       #    IMAGE_TAG: ${{ env.PLATFORM_VERSION }}
+      - name: 'Get latest release tag'
+        id: latesttag
+        uses: "WyriHaximus/github-action-get-latest-tag@v1"
 
       - name: Cut out a new release branch
         run: |
@@ -63,6 +66,12 @@ jobs:
           git config --local user.name "GitHub Actions"
           git switch -c ${{ env.PLATFORM_VERSION }}
           git push origin ${{ env.PLATFORM_VERSION }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name:  "Delete latest release branch"
+        run: |
+          git push origin --delete ${{ steps.latesttag.outputs.tag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
