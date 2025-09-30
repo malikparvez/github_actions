@@ -1,4 +1,4 @@
-name: Deploy to stage
+name: Release prep
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  deploy-to-stage:
+  release_prep:
     runs-on: ubuntu-latest
 
     steps:
@@ -84,12 +84,12 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "update versions v${{ inputs.version }}"
-          branch: "stage-prep"
+          branch: "prep-release"
           delete-branch: true
-          title: "Create stage release v${{ inputs.version }}"
+          title: "Release prep for v${{ inputs.version }}"
           base: "main"
           body: |
-            Automated stage release
+            Automated release prep
           labels: "maintenance"
 
       - name: Auto-merge the pull request
