@@ -1,0 +1,106 @@
+name: Release Prep k8s
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release_prep:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Get latest release tag
+        id: latesttag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+
+      - name: Update version in metadata.json
+        id: update_version
+        run: |
+          python3 << 'EOF'
+          import json
+          import re
+          from datetime import datetime
+          
+          with open('metadata.json', 'r') as f:
+              metadata = json.load(f)
+
+          current_version = metadata['version']
+          next_version = metadata['release']['next']
+
+          print(f"Current version: {current_version}")
+          print(f"Next version: {next_version}")
+
+          # Calculate version after "next"
+          current_year = datetime.now().year
+          match = re.match(r'^(\d{4})\.(\d+)$', next_version)
+          if match:
+              minor = int(match.group(2)) + 1
+              after_next_version = f"{match.group(1)}.{minor}"
+          else:
+              after_next_version = f"{current_year}.2"
+
+          metadata['version'] = next_version
+          metadata['environments']['staging']['image'] = f"cds-workflows:{next_version}"
+          metadata['release']['current'] = next_version
+          metadata['release']['previous'] = current_version
+          metadata['release']['next'] = after_next_version
+          metadata['updated'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+
+          with open('metadata.json', 'w') as f:
+              json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+          print(f"Updated to version: {next_version}")
+          print(f"Next planned version: {after_next_version}")
+
+          with open("${GITHUB_OUTPUT}", "a") as out:
+              out.write(f"version={next_version}\n")
+          EOF
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --local user.name "${{ github.actor }}"
+          git add metadata.json
+          git commit -m "Release prep v${{ steps.update_version.outputs.version }}" || echo "No changes to commit"
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "update versions v${{ steps.update_version.outputs.version }}"
+          branch: "prep-release"
+          delete-branch: true
+          title: "Release prep for v${{ steps.update_version.outputs.version }}"
+          base: "main"
+          body: |
+            Automated release prep for version ${{ steps.update_version.outputs.version }}
+          labels: "maintenance"
+
+      - name: Merge release prep PR (admin bypass for testing)
+        run: |
+          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --merge --delete-branch --admin --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cut out a new release branch
+        run: |
+          git config --local user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --local user.name "${{ github.actor }}"
+          git switch -c ${{ steps.update_version.outputs.version }}
+          git push origin ${{ steps.update_version.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
