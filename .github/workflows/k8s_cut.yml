@@ -27,27 +27,36 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.ref }}
+          ref: main
 
       - name: Get latest release tag
         id: latesttag
         uses: WyriHaximus/github-action-get-previous-tag@v1
 
+      - name: Read version from metadata.json if not provided
+        id: current_version
+        run: |
+          if [ -z "${{ inputs.version }}" ]; then
+            VERSION=$(jq -r '.version' metadata.json)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+
       - name: Check if version already exists
         id: version-check
         run: |
           LATEST_TAG="${{ steps.latesttag.outputs.tag }}"
-          INPUT_VERSION="${{ inputs.version }}"
+          VERSION="${{ steps.current_version.outputs.version }}"
           
           echo "Latest tag: $LATEST_TAG"
-          echo "Input version: $INPUT_VERSION"
+          echo "Version to release: $VERSION"
           
-          if [ "$LATEST_TAG" = "$INPUT_VERSION" ]; then
+          if [ "$LATEST_TAG" = "$VERSION" ]; then
             echo "new_release=false" >> $GITHUB_OUTPUT
-            echo "❌ Version $INPUT_VERSION already exists as the latest tag"
+            echo "❌ Version $VERSION already exists as the latest tag"
           else
             echo "new_release=true" >> $GITHUB_OUTPUT
-            echo "✅ Version $INPUT_VERSION is new and can be created"
+            echo "✅ Version $VERSION is new and can be created"
           fi
 
       - name: Cut out a new release branch
