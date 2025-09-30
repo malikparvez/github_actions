@@ -60,22 +60,6 @@ jobs:
             echo "✅ Version $VERSION is new and can be created"
           fi
 
-      - name: Cut out a new release branch
-        if: ${{ steps.version-check.outputs.new_release == 'true' }}
-        run: |
-          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
-          git config --local user.name "GitHub Actions"
-          git switch -c ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Checkout main repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: main
-
       - name: Update version in metadata.json
         run: |
           jq --arg VERSION "${{ inputs.version }}" --arg TIMESTAMP "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg IMAGE "cds-workflows:${{ inputs.version }}" '
@@ -111,5 +95,15 @@ jobs:
       - name: Auto-merge the pull request
         run: |
           gh pr merge stage-prep --merge --delete-branch --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cut out a new release branch
+        if: ${{ steps.version-check.outputs.new_release == 'true' }}
+        run: |
+          git config --local user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+          git switch -c ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
