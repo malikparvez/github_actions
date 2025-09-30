@@ -54,10 +54,10 @@ jobs:
           
           if [ "$LATEST_TAG" = "$VERSION" ]; then
             echo "new_release=false" >> $GITHUB_OUTPUT
-            echo "❌ Version $VERSION already exists as the latest tag"
+            echo "Version $VERSION already exists as the latest tag"
           else
             echo "new_release=true" >> $GITHUB_OUTPUT
-            echo "✅ Version $VERSION is new and can be created"
+            echo "Version $VERSION is new and can be created"
           fi
 
       - name: Update version in metadata.json
