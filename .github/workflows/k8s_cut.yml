@@ -80,6 +80,7 @@ jobs:
           git commit -m "Release prep v${{ inputs.version }}"
 
       - name: Create pull Request
+        id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,7 +99,6 @@ jobs:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: merge
           token: ${{ secrets.GITHUB_TOKEN }}
-
 
       - name: Cut out a new release branch
         if: ${{ steps.version-check.outputs.new_release == 'true' }}
