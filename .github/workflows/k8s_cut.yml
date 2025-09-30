@@ -41,6 +41,7 @@ jobs:
             echo "version=$VERSION" >> $GITHUB_OUTPUT
           else
             echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check if version already exists
         id: version-check
