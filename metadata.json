@@ -1,6 +1,6 @@
 {
   "name": "cds-workflows",
-  "version": "2025.2",
+  "version": "2025.3",
   "description": "CDS Workflows - CI/CD pipeline definitions",
   "environments": {
     "development": {
@@ -9,7 +9,7 @@
     },
     "staging": {
       "url": "https://staging.example.com",
-      "image": "cds-workflows:2025.2"
+      "image": "cds-workflows:2025.3"
     },
     "production": {
       "url": "https://production.example.com",
@@ -17,9 +17,9 @@
     }
   },
   "release": {
-    "current": "2025.2",
-    "previous": "16.0.0",
-    "next": "2025.3"
+    "current": "2025.3",
+    "previous": "2025.2",
+    "next": "2025.4"
   },
   "maintainers": [
     {
@@ -28,5 +28,5 @@
     }
   ],
   "created": "2025-01-01T00:00:00Z",
-  "updated": "2025-09-30T13:47:26Z"
+  "updated": "2025-09-30T13:48:38Z"
 }
