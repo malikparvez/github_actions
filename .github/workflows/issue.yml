@@ -19,7 +19,7 @@ jobs:
           BASE_BRANCH="main"
           ISSUE_ID="1"                # ← change to a valid issue number
           SHORT_SLUG="poc-branch-test"
-          BRANCH_NAME="puppet-cds/${ISSUE_ID}/${SHORT_SLUG}"
+          BRANCH_NAME="malikparvez-github_actions/${ISSUE_ID}/${SHORT_SLUG}"
 
           echo "repo=${REPO}" >> $GITHUB_OUTPUT
           echo "base_branch=${BASE_BRANCH}" >> $GITHUB_OUTPUT
