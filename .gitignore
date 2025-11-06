@@ -12,9 +12,9 @@ ${RUNNER_TOOL_CACHE}
 *.swp
 *.swo
 *~
-.DS_Store
 
 # OS files
+.DS_Store
 Thumbs.db
 Desktop.ini
 
@@ -34,7 +34,6 @@ node_modules/
 .bundle/
 
 # Ruby specific
-Gemfile.lock
 vendor/bundle/
 
 # Python specific
