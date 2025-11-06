@@ -15,7 +15,7 @@ jobs:
       - name: 🧾 Set Test Variables
         id: vars
         run: |
-          REPO="org/repo"               # ← change to your repo, e.g. "myorg/cds-metrics"
+          REPO="malikparvez/github_actions"               # ← change to your repo, e.g. "myorg/cds-metrics"
           BASE_BRANCH="main"
           ISSUE_ID="1"                # ← change to a valid issue number
           SHORT_SLUG="poc-branch-test"
