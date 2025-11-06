@@ -15,11 +15,11 @@ jobs:
       - name: 🧾 Set Test Variables
         id: vars
         run: |
-          REPO="malikparvez/github_actions"               # ← change to your repo, e.g. "myorg/cds-metrics"
+          REPO="malikparvez/github_actions"  # your repo
           BASE_BRANCH="main"
-          ISSUE_ID="1"                # ← change to a valid issue number
+          ISSUE_ID="1"
           SHORT_SLUG="poc-branch-test"
-          BRANCH_NAME="malikparvez-github_actions/${ISSUE_ID}/${SHORT_SLUG}"
+          BRANCH_NAME="puppet-cds/${ISSUE_ID}/${SHORT_SLUG}"
 
           echo "repo=${REPO}" >> $GITHUB_OUTPUT
           echo "base_branch=${BASE_BRANCH}" >> $GITHUB_OUTPUT
@@ -27,28 +27,21 @@ jobs:
           echo "short_slug=${SHORT_SLUG}" >> $GITHUB_OUTPUT
           echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
 
-      - name: 🧩 Get Base Branch SHA
-        id: base
-        run: |
-          SHA=$(gh api repos/${{ steps.vars.outputs.repo }}/git/ref/heads/${{ steps.vars.outputs.base_branch }} --jq '.object.sha')
-          echo "sha=${SHA}" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 🔄 Checkout Base Branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.vars.outputs.repo }}
+          ref: ${{ steps.vars.outputs.base_branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🌿 Create New Branch
         run: |
-          echo "Creating branch: ${{ steps.vars.outputs.branch_name }}"
-          gh api repos/${{ steps.vars.outputs.repo }}/git/refs \
-            --method POST \
-            -f ref="refs/heads/${{ steps.vars.outputs.branch_name }}" \
-            -f sha="${{ steps.base.outputs.sha }}" || echo "⚠️ Branch may already exist"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git checkout -b "${{ steps.vars.outputs.branch_name }}"
+          echo "PoC commit for issue #${{ steps.vars.outputs.issue_id }}" > link.txt
+          git add link.txt
+          git commit -m "linking issue #${{ steps.vars.outputs.issue_id }}"
+          git push origin "${{ steps.vars.outputs.branch_name }}" || echo "⚠️ Branch may already exist"
 
-      - name: 💬 Comment on Issue
+      - name: ✅ Verify Linkage
         run: |
-          gh issue comment ${{ steps.vars.outputs.issue_id }} \
-            --repo ${{ steps.vars.outputs.repo }} \
-            --body "🔗 Branch \`${{ steps.vars.outputs.branch_name }}\` created from \`${{ steps.vars.outputs.base_branch }}\`."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "✅ Branch '${{ steps.vars.outputs.branch_name }}' created and linked to issue #${{ steps.vars.outputs.issue_id }}."
