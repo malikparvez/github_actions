@@ -41,6 +41,8 @@ jobs:
           git add link.txt
           git commit -m "linking issue #${{ steps.vars.outputs.issue_id }}"
           git push origin "${{ steps.vars.outputs.branch_name }}" || echo "⚠️ Branch may already exist"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: ✅ Verify Linkage
         run: |
