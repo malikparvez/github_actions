@@ -1,0 +1,48 @@
+# GitHub Actions runtime files
+${GITHUB_OUTPUT}
+${GITHUB_ENV}
+${GITHUB_PATH}
+${GITHUB_STEP_SUMMARY}
+${RUNNER_TEMP}
+${RUNNER_TOOL_CACHE}
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Build artifacts
+dist/
+build/
+*.pyc
+__pycache__/
+node_modules/
+*.gem
+.bundle/
+
+# Ruby specific
+Gemfile.lock
+vendor/bundle/
+
+# Python specific
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files
+.env
+.env.local
