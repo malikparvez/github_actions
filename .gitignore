@@ -32,8 +32,6 @@ __pycache__/
 node_modules/
 *.gem
 .bundle/
-
-# Ruby specific
 vendor/bundle/
 
 # Python specific
