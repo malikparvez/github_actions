@@ -34,15 +34,18 @@ jobs:
           ref: ${{ steps.vars.outputs.base_branch }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🌿 Create New Branch
+      - name: 👤 Configure Git Identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 🌿 Create and Push Linked Branch
         run: |
           git checkout -b "${{ steps.vars.outputs.branch_name }}"
           echo "PoC commit for issue #${{ steps.vars.outputs.issue_id }}" > link.txt
           git add link.txt
           git commit -m "linking issue #${{ steps.vars.outputs.issue_id }}"
           git push origin "${{ steps.vars.outputs.branch_name }}" || echo "⚠️ Branch may already exist"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: ✅ Verify Linkage
         run: |
