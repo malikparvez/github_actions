@@ -1,0 +1,54 @@
+name: PoC - Create Linked Branch Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Set Test Variables
+        id: vars
+        run: |
+          REPO="org/repo"               # ← change to your repo, e.g. "myorg/cds-metrics"
+          BASE_BRANCH="main"
+          ISSUE_ID="1"                # ← change to a valid issue number
+          SHORT_SLUG="poc-branch-test"
+          BRANCH_NAME="puppet-cds/${ISSUE_ID}/${SHORT_SLUG}"
+
+          echo "repo=${REPO}" >> $GITHUB_OUTPUT
+          echo "base_branch=${BASE_BRANCH}" >> $GITHUB_OUTPUT
+          echo "issue_id=${ISSUE_ID}" >> $GITHUB_OUTPUT
+          echo "short_slug=${SHORT_SLUG}" >> $GITHUB_OUTPUT
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+
+      - name: 🧩 Get Base Branch SHA
+        id: base
+        run: |
+          SHA=$(gh api repos/${{ steps.vars.outputs.repo }}/git/ref/heads/${{ steps.vars.outputs.base_branch }} --jq '.object.sha')
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🌿 Create New Branch
+        run: |
+          echo "Creating branch: ${{ steps.vars.outputs.branch_name }}"
+          gh api repos/${{ steps.vars.outputs.repo }}/git/refs \
+            --method POST \
+            -f ref="refs/heads/${{ steps.vars.outputs.branch_name }}" \
+            -f sha="${{ steps.base.outputs.sha }}" || echo "⚠️ Branch may already exist"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 💬 Comment on Issue
+        run: |
+          gh issue comment ${{ steps.vars.outputs.issue_id }} \
+            --repo ${{ steps.vars.outputs.repo }} \
+            --body "🔗 Branch \`${{ steps.vars.outputs.branch_name }}\` created from \`${{ steps.vars.outputs.base_branch }}\`."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
