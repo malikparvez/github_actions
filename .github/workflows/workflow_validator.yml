@@ -1,0 +1,30 @@
+name: Validate GitHub Workflow Syntax
+
+on:
+  pull_request:
+    paths:
+      - ".github/**"
+
+jobs:
+  validate:
+    name: Lint Workflow Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      - name: Install actionlint
+        run: |
+          echo "⬇️ Installing actionlint..."
+          go install github.com/rhysd/actionlint/cmd/actionlint@latest
+
+      - name: Run actionlint
+        run: |
+          echo "🔍 Validating GitHub workflow syntax..."
+          ~/go/bin/actionlint
