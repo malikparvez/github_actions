@@ -1,73 +1,161 @@
-name: Test Updatecli Version Update
+name: Release Prep (Manual Test)
 
 on:
   workflow_dispatch:
     inputs:
-      service_name:
-        description: "Name of the service to update"
+      target-branch:
+        description: 'Target branch for release preparation'
+        required: false
         type: string
-        required: true
-      version:
-        description: "Version to set for the service"
-        type: string
-        required: true
+        default: 'main'
+      create-release-branch:
+        description: 'Create a release branch'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
+  id-token: write
   contents: write
+  pull-requests: write
 
 jobs:
-  update_version:
+  release_prep:
     runs-on: ubuntu-latest
 
+    outputs:
+      version: ${{ steps.semantic_release.outputs.version }}
+      released: ${{ steps.semantic_release.outputs.released }}
+      tag: ${{ steps.semantic_release.outputs.tag }}
+
     steps:
-      - name: Checkout repo
+
+      - name: Checkout source repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-  
-      - name: Install Updatecli in the runner
-        uses: updatecli/updatecli-action@v2
+          fetch-tags: true
+          ref: ${{ github.event.inputs.target-branch || 'main' }}
 
-      - name: Generate UTC timestamp
-        id: timestamp
-        run: echo "ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+      #- name: Force branch to workflow SHA
+      #  run: git reset --hard ${{ github.sha }}
 
-      - name: Create Updatecli config dynamically
+      - name: Run Semantic Release
+        id: semantic_release
+        uses: python-semantic-release/python-semantic-release@v10.5.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git_committer_name: github-actions
+          git_committer_email: actions@users.noreply.github.com
+
+      - name: Print Semantic Release Outputs
         run: |
-          cat <<'EOF' > updatecli.yaml
-          name: "Update version in versions.md"
+          echo "released:   ${{ steps.semantic_release.outputs.released }}"
+          echo "version:    ${{ steps.semantic_release.outputs.version }}"
+          echo "tag:        ${{ steps.semantic_release.outputs.tag }}"
 
-          sources:
-            new_version:
-              kind: shell
-              spec:
-                command: "echo ${{ github.event.inputs.version }}"
+      - name: Update releases.json with version info
+        if: ${{ steps.semantic_release.outputs.released == 'true' }}
+        run: |
+          SERVICE_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          VERSION="${{ steps.semantic_release.outputs.version }}"
+          TAG="${{ steps.semantic_release.outputs.tag }}"
+          TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-8)
+          
+          echo "Updating releases.json for service: $SERVICE_NAME"
+          
+          # Create releases.json if it doesn't exist
+          if [ ! -f releases.json ]; then
+            echo '{"releases": {}}' > releases.json
+          fi
+          
+          # Update releases.json with jq
+          jq --arg service "$SERVICE_NAME" \
+             --arg version "$VERSION" \
+             --arg tag "$TAG" \
+             --arg sha "$SHORT_SHA" \
+             --arg timestamp "$TIMESTAMP" \
+             '
+             .releases[$service] = {
+               "latest_version": $version,
+               "release_date": $timestamp,
+               "tag": $tag,
+               "release_sha": $sha,
+               "history": [
+                 {
+                   "version": $version,
+                   "date": $timestamp,
+                   "tag": $tag
+                 }
+               ] + (.releases[$service].history // [])
+             }
+             ' releases.json > releases.json.tmp && mv releases.json.tmp releases.json
+          
+          echo "Successfully updated releases.json"
+          echo "=== Updated releases.json content ==="
+          cat releases.json
 
-            timestamp:
-              kind: shell
-              spec:
-                command: "echo ${{ steps.timestamp.outputs.ts }}"
+      - name: Generate release.md from JSON
+        if: ${{ steps.semantic_release.outputs.released == 'true' }}
+        run: |
+          echo "Generating release.md from releases.json"
+          
+          cat > release.md << 'EOF'
+          # Release Information
 
-          targets:
-            update_markdown:
-              kind: file
-              spec:
-                file: "versions.md"
-                matchpattern: "^\\| ${{ github.event.inputs.service_name }}\\s*\\|.*$"
-                replacepattern: "| ${{ github.event.inputs.service_name }} | {{ source \"new_version\" }} | {{ source \"timestamp\" }} |"
+          This document tracks release versions and timestamps for all services in this repository.
 
-          actions:
-            default:
-              kind: github/pullrequest
-              spec:
-                title: "chore: update ${{ github.event.inputs.service_name }} → ${{ github.event.inputs.version }}"
-                labels:
-                  - update
+          ## Services
+
+          | Service Name | Latest Version | Release Date | Tag | Release SHA |
+          |--------------|----------------|--------------|-----|-------------|
           EOF
+          
+          # Generate table rows from JSON
+          jq -r '.releases | to_entries | .[] | "| \(.key) | \(.value.latest_version) | \(.value.release_date) | \(.value.tag) | \(.value.release_sha) |"' releases.json >> release.md
+          
+          cat >> release.md << 'EOF'
 
-      - name: Run Updatecli Apply
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ## Release History
+
+          EOF
+          
+          # Generate history sections from JSON
+          jq -r '.releases | to_entries | .[] | "### \(.key)", (.value.history | .[] | "- \(.tag) - \(.date)"), ""' releases.json >> release.md
+          
+          cat >> release.md << 'EOF'
+          ---
+          *This file is automatically updated by the release workflow*
+          EOF
+          
+          echo "Successfully generated release.md from JSON"
+          echo "=== Generated release.md content ==="
+          cat release.md
+
+      - name: Commit and push release files
+        if: ${{ steps.semantic_release.outputs.released == 'true' }}
         run: |
-          updatecli apply --config updatecli.yaml --clean=true
-  
+          git config --local user.email "actions@users.noreply.github.com"
+          git config --local user.name "github-actions"
+          
+          git add releases.json release.md
+          git commit -m "docs: update release files with version ${{ steps.semantic_release.outputs.version }}"
+          git push origin ${{ github.event.inputs.target-branch || 'main' }}
+          echo "Committed and pushed release file updates"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release branch
+        if: ${{ github.event.inputs.create-release-branch == 'true' && steps.semantic_release.outputs.released == 'true' }}
+        run: |
+          git config --local user.email "actions@users.noreply.github.com"
+          git config --local user.name "github-actions"
+
+          RELEASE_BRANCH="release/${{ steps.semantic_release.outputs.version }}"
+          git switch -c "$RELEASE_BRANCH"
+          git push origin "$RELEASE_BRANCH"
+
+          echo "Created release branch: $RELEASE_BRANCH"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
