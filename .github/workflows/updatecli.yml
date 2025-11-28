@@ -55,7 +55,8 @@ jobs:
               spec:
                 file: "versions.md"
                 matchpattern: "^\\| ${{ github.event.inputs.service_name }}\\s*\\|.*$"
-                replacepattern: "| ${{ github.event.inputs.service_name }} | \${{ source `new_version` }} | \${{ source `timestamp` }} |"
+                replacepattern: "| ${{ github.event.inputs.service_name }} | \${{ source \"new_version\" }} | \${{ source \"timestamp\" }} |"
+
           actions:
             default:
               kind: "github/pullrequest"
