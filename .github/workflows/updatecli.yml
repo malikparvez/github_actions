@@ -24,10 +24,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Install Updatecli
-        run: |
-          curl -s https://www.updatecli.io/install.sh | sudo sh
+  
+      - name: Install Updatecli in the runner
+        uses: updatecli/updatecli-action@v2
 
       - name: Generate UTC timestamp
         id: timestamp
