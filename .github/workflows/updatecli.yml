@@ -35,33 +35,33 @@ jobs:
 
       - name: Create Updatecli config dynamically
         run: |
-          cat <<EOF > updatecli.yaml
+          cat <<'EOF' > updatecli.yaml
           name: "Update version in versions.md"
 
           sources:
             new_version:
-              kind: "shell"
+              kind: shell
               spec:
                 command: "echo ${{ github.event.inputs.version }}"
 
             timestamp:
-              kind: "shell"
+              kind: shell
               spec:
                 command: "echo ${{ steps.timestamp.outputs.ts }}"
 
           targets:
             update_markdown:
-              kind: "file"
+              kind: file
               spec:
                 file: "versions.md"
                 matchpattern: "^\\| ${{ github.event.inputs.service_name }}\\s*\\|.*$"
-                replacepattern: "| ${{ github.event.inputs.service_name }} | \${{ source \"new_version\" }} | \${{ source \"timestamp\" }} |"
+                replacepattern: "| ${{ github.event.inputs.service_name }} | {{ source \"new_version\" }} | {{ source \"timestamp\" }} |"
 
           actions:
             default:
-              kind: "github/pullrequest"
+              kind: github/pullrequest
               spec:
-                title: "chore: update ${{ github.event.inputs.service_name }} to ${{ github.event.inputs.version }}"
+                title: "chore: update ${{ github.event.inputs.service_name }} → ${{ github.event.inputs.version }}"
                 labels:
                   - update
           EOF
