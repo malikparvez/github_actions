@@ -1,0 +1,76 @@
+name: Test Updatecli
+
+on:
+  workflow_dispatch:
+    inputs:
+      service-name:
+        description: "Service name in releases.json (e.g. cds-metrics)"
+        required: true
+      version:
+        description: "Version to write"
+        required: true
+
+jobs:
+  test_updatecli:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout cds-platform-tools
+        uses: actions/checkout@v4
+
+      - name: Generate updatecli.yaml
+        run: |
+          SERVICE="${{ github.event.inputs['service-name'] }}"
+          VERSION="${{ github.event.inputs.version }}"
+          TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+
+          cat > updatecli.yaml <<EOF
+          name: "Test Update releases.json for ${SERVICE}"
+
+          scms:
+            default:
+              kind: local
+              spec:
+                path: "cds-platform-tools"
+
+          targets:
+            updateLatestVersion:
+              name: "Update latest version"
+              scmid: default
+              kind: json
+              spec:
+                file: "releases.json"
+                key: \$.releases["${SERVICE}"].latest_version
+                value: "${VERSION}"
+
+            updateReleaseDate:
+              name: "Update release date"
+              scmid: default
+              kind: json
+              spec:
+                file: "releases.json"
+                key: \$.releases["${SERVICE}"].release_date
+                value: "${TIMESTAMP}"
+          EOF
+
+          echo "Generated updatecli.yaml:"
+          cat updatecli.yaml
+
+      - name: Install Updatecli
+        uses: updatecli/updatecli-action@v2
+
+      - name: Updatecli diff
+        run: updatecli diff --config updatecli.yaml --clean=true
+
+      - name: Apply changes
+        run: updatecli apply --config updatecli.yaml --clean=true
+
+      - name: Commit & Push changes
+        working-directory: cds-platform-tools
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add releases.json
+          git commit -m "test: update releases.json for ${{ github.event.inputs['service-name'] }}"
+          git push origin main
