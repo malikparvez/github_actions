@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   update_version:
@@ -25,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+  
       - name: Install Updatecli in the runner
         uses: updatecli/updatecli-action@v2
 
@@ -35,42 +34,40 @@ jobs:
 
       - name: Create Updatecli config dynamically
         run: |
-          cat <<EOF > updatecli.yaml
+          cat <<'EOF' > updatecli.yaml
           name: "Update version in versions.md"
 
           sources:
             new_version:
               kind: shell
               spec:
-                command: "echo ${VERSION}"
+                command: "echo ${{ github.event.inputs.version }}"
 
             timestamp:
               kind: shell
               spec:
-                command: "echo ${TIMESTAMP}"
+                command: "echo ${{ steps.timestamp.outputs.ts }}"
 
           targets:
             update_markdown:
               kind: file
               spec:
                 file: "versions.md"
-                matchpattern: "^\\| ${SERVICE_NAME} \\|.*$"
-                replacepattern: "| ${SERVICE_NAME} | {{ source \`new_version\` }} | {{ source \`timestamp\` }} |"
+                matchpattern: "^\\| ${{ github.event.inputs.service_name }}\\s*\\|.*$"
+                replacepattern: "| ${{ github.event.inputs.service_name }} | {{ source \"new_version\" }} | {{ source \"timestamp\" }} |"
 
           actions:
             default:
               kind: github/pullrequest
               spec:
-                title: "chore: update ${SERVICE_NAME} → ${VERSION}"
+                title: "chore: update ${{ github.event.inputs.service_name }} → ${{ github.event.inputs.version }}"
                 labels:
                   - update
           EOF
-        env:
-          SERVICE_NAME: ${{ github.event.inputs.service_name }}
-          VERSION: ${{ github.event.inputs.version }}
-          TIMESTAMP: ${{ steps.timestamp.outputs.ts }}
 
       - name: Run Updatecli Apply
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: updatecli apply --config updatecli.yaml --clean=true
+        run: |
+          updatecli apply --config updatecli.yaml --clean=true
+  
